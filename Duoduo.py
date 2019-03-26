@@ -80,22 +80,32 @@ def auto_reply(msg):
             print(jsondata)
             s = requests.post(posturl, data=jsondata).json()
             print(s)
+            responses = []
             #print(s['intent']['code'])
             if s['intent']['code'] < 20000:
-                resultType = s['results'][0]['resultType']
-                if resultType == 'text':
-                    return s['results'][0]['values']['text']
-                elif resultType == 'image':
-                    img_url = s['results'][0]['values']['image']
-                    r = requests.get(img_url, stream = True)
-                    img_name = img_url.split('/')[-1]
-                    with open(img_name, 'wb') as img:
-                        for cnt in r.iter_content():
-                            img.write(cnt)
-                    msg.reply_image(img_name)
-                    os.remove(img_name)
-                else:
-                    return 'unknown result type {} returned'.format(resultType)
+                for result in s['results']:
+                    resultType = result['resultType']
+                    print(resultType)
+                    if resultType == 'text':
+                        responses.append(result['values']['text'])
+                    elif resultType == 'news':
+                        news = result['values']['news']
+                        for nw in news:
+                            responses.append(nw['name'] + ':' + nw['detailurl'])
+                    elif resultType == 'image':
+                        img_url = result['values']['image']
+                        r = requests.get(img_url, stream = True)
+                        img_name = img_url.split('/')[-1]
+                        with open(img_name, 'wb') as img:
+                            for cnt in r.iter_content():
+                                img.write(cnt)
+                        msg.reply_image(img_name)
+                        os.remove(img_name)
+                    else:
+                        return 'unknown result type {} returned'.format(resultType)
+                
+                return '\r\n'.join(responses)
+
             else:
                 return 'error met with code {}'.format(s['intent']['code']) 
     elif mode == 4:
