@@ -92,6 +92,8 @@ def auto_reply(msg):
                         news = result['values']['news']
                         for nw in news:
                             responses.append(nw['name'] + ':' + nw['detailurl'])
+                    elif resultType =='url':
+                        responses.append(result['values']['url'])
                     elif resultType == 'image':
                         img_url = result['values']['image']
                         r = requests.get(img_url, stream = True)
@@ -101,6 +103,10 @@ def auto_reply(msg):
                                 img.write(cnt)
                         msg.reply_image(img_name)
                         os.remove(img_name)
+                    elif resultType =='voice':
+                        return 'currently not supported type ' + resultType
+                    elif resultType =='video':
+                        return 'currently not supported type ' + resultType
                     else:
                         return 'unknown result type {} returned'.format(resultType)
                 
@@ -109,7 +115,7 @@ def auto_reply(msg):
             else:
                 return 'error met with code {}'.format(s['intent']['code']) 
     elif mode == 4:
-        return 'you are talking to a apiai robot...'
+        return 'you are talking to a apiai robot... NOT IMPLEMENTED YET.'
     else:
         pass #should not be here.
 '''
