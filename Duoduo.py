@@ -51,7 +51,7 @@ def auto_reply(msg):
                 print(msg.file_name)
                 msg.get_file(msg.file_name)
                 data={
-                'reqType': 0,
+                'reqType': 1,
                 'perception': {
                     'inputImage': {
                         'url':msg.file_name
