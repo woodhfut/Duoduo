@@ -2,6 +2,10 @@ from wxpy import *
 import requests
 import json
 import os
+from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.metrics.pairwise import linear_kernel
+import jieba
+
 
 bot = Bot(cache_path=True)
 bot.enable_puid('wxpy_puid.pkl')
@@ -11,12 +15,7 @@ friends ={}
 api_key='af6e96a10a2340e7bbe011f630a8c070'
 posturl = 'http://openapi.tuling123.com/openapi/api/v2'
 
-
-
-@bot.register(msg_types = [TEXT,PICTURE], except_self=False)
-def auto_reply(msg):
-    #print(msg.chat.name)
-    help_msg = '''Hello there, I am duoduo. My owner is now away, you are welcome to talk to me! \r\nI can answer below questins. Type specific number to know related info.\n
+help_msg = '''Hello there, I am duoduo. My owner is now away, you are welcome to talk to me! \r\nI can answer below questins. Type specific number to know related info.\n
         1. Hello.
         2. how are you
         3. random talk with tuling robot...
@@ -25,6 +24,25 @@ def auto_reply(msg):
     if need immediate help, call my owner at cell number xxxx  
     
                  '''
+def get_corpus(corpus_path = './hy.txt', sep='##'):
+    if os.path.exists(corpus_path):
+        try:
+            with open(corpus_path, 'r') as f:
+                for doc in f:
+                    tmp = doc.split(sep)
+                    if len(tmp) == 2:
+                        yield tmp[0], tmp[1]
+                    else:
+                        continue
+        except:
+            return None
+    else:
+        return None
+
+@bot.register(msg_types = [TEXT,PICTURE], except_self=False)
+def auto_reply(msg):
+    #print(msg.chat.name)
+    
     if msg.chat.name not in friends:
         friends[msg.chat.name] = 0
         return help_msg
@@ -33,7 +51,8 @@ def auto_reply(msg):
         if '1' == msg.text:
             return 'Hello'
         elif '2' == msg.text:
-            return 'how are u'
+            friends[msg.chat.name] = 2
+            return 'You now can ask me questions about HY business. Enter "quit" to exit.'
         elif '3' == msg.text:
             friends[msg.chat.name] = 3
             return 'what do you want to talk about to tuling robot? Enter "quit" to exit.'
@@ -42,6 +61,23 @@ def auto_reply(msg):
             return 'what do you want to talk about to apiai robot?'
         else:
             return help_msg
+    elif mode == 2:
+        if '退出'== msg.text or 'quit' == msg.text:
+            friends[msg.chat.name] = 0
+            return help_msg
+        else:
+            corpus, answer = get_corpus()
+            if corpus:
+                tf = TfidfVectorizer(token_pattern='(?u)\\b\\w+\\b')
+                mat = tf.fit_transform(corpus)
+                msg_vect = tf.transform([' '.join(jieba.cut_for_search(msg.text))])
+                sim = linear_kernel(mat, msg_vect)
+                most_sim = sorted(enumerate(sim), lambda x : x[1][0], reverse =True)[0]
+                return answer[most_sim[0]]
+            else:
+                friends[msg.chat.name] = 0
+                return 'NO corpus found! \r\n' + help_msg
+
     elif mode == 3:
         if '退出'== msg.text or 'quit' == msg.text:
             friends[msg.chat.name] = 0
